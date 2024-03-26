@@ -17,7 +17,6 @@ def is_time_to_next(frame, next_icon=next_icon):
     result = cv2.matchTemplate(frame, next_icon, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 
-    # 매칭된 최대값이 임계값 이상이면 이미지가 프레임에 있습니다.
     threshold = 0.8  # 임계값
     if max_val >= threshold:
         image_height, image_width = next_icon.shape[:2]
@@ -52,9 +51,9 @@ while not stop_flag:
     central_xy = is_time_to_next(frame)
     
     if central_xy != None:
-        print(central_xy)
-        pyautogui.moveTo(central_xy[0], central_xy[1], duration=1)
+        pyautogui.moveTo(central_xy[0], central_xy[1], duration=0.3)
         pyautogui.click()
+
     else:
         if side_to_side_flag:
             pyautogui.moveTo(50, 50, duration=0.5)
