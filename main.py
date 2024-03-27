@@ -5,11 +5,12 @@ import cv2
 from PIL import ImageGrab
 import time
 from pynput import keyboard
+from datetime import datetime
 
 width, height = pyautogui.size()
-print(width, height)
-
-threshold = 0.8
+print("="*50)
+print(f"Your screen system consists of : {width} x {height}")
+print("="*50)
 #for i in range(10):
 #    print(f"{10-i}")
 #    time.sleep(1)
@@ -35,9 +36,14 @@ def is_image_exist(frame, image, threshold):
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 
     if max_val >= threshold:
+        print(f"DEBUG:\tThreshold {threshold}, detected image {max_val}")
         return get_center_of_top_left(image, max_loc)
     else:
         None
+def click_to(x, y, title=""):
+    print(f"DEBUG:\t{title}\tClicked - {datetime.now()}")
+    pyautogui.moveTo(x, y, duration=0.3)
+    pyautogui.click()
 
 def on_release(key):
     if key == keyboard.Key.esc:
@@ -63,11 +69,9 @@ while not stop_flag:
     exit_learn_central_xy = is_image_exist(darker_frame, after_learn_icon, threshold=0.75)
     
     if next_central_xy != None:
-        pyautogui.moveTo(next_central_xy[0], next_central_xy[1], duration=0.3)
-        pyautogui.click()
+        click_to(next_central_xy[0], next_central_xy[1], "Next Button")
     elif exit_learn_central_xy != None:
-        pyautogui.moveTo(exit_learn_central_xy[0], exit_learn_central_xy[1], duration=0.3)
-        pyautogui.click()
+        click_to(exit_learn_central_xy[0], exit_learn_central_xy[1], "Done of Learning")
     else:
         if side_to_side_flag:
             pyautogui.moveTo(50, 50, duration=0.5)
