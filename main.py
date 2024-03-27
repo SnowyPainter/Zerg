@@ -22,6 +22,7 @@ def is_time_to_next(frame, next_icon=next_icon):
     result = cv2.matchTemplate(frame, next_icon, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 
+    print(max_val)
     if max_val >= threshold:
         image_height, image_width = next_icon.shape[:2]
         top_left = max_loc
