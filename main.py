@@ -6,26 +6,36 @@ from PIL import ImageGrab
 import time
 from pynput import keyboard
 
-width = 1920
-height = 1024
+width, height = pyautogui.size()
+print(width, height)
+
+threshold = 0.8
+#for i in range(10):
+#    print(f"{10-i}")
+#    time.sleep(1)
 
 next_icon = cv2.imread("./next.png")
-next_icon = cv2.cvtColor(next_icon, cv2.COLOR_BGR2GRAY)
-_, next_icon = cv2.threshold(next_icon, 127, 255, cv2.THRESH_BINARY)
+after_learn_icon = cv2.imread("./after_learn.png")
 
-def is_time_to_next(frame, next_icon=next_icon):
-    result = cv2.matchTemplate(frame, next_icon, cv2.TM_CCOEFF_NORMED)
+next_icon = cv2.cvtColor(next_icon, cv2.COLOR_BGR2GRAY)
+after_learn_icon = cv2.cvtColor(after_learn_icon, cv2.COLOR_BGR2GRAY)
+_, next_icon = cv2.threshold(next_icon, 127, 255, cv2.THRESH_BINARY)
+_, after_learn_icon = cv2.threshold(after_learn_icon, 127, 255, cv2.THRESH_BINARY)
+
+def get_center_of_top_left(image, top_left):
+    image_height, image_width = image.shape[:2]
+    bottom_right = (top_left[0] + image_width, top_left[1] + image_height)
+    
+    center_x = (top_left[0] + bottom_right[0]) // 2
+    center_y = (top_left[1] + bottom_right[1]) // 2
+    return (center_x, center_y)
+
+def is_image_exist(frame, image, threshold):
+    result = cv2.matchTemplate(frame, image, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 
-    threshold = 0.8  # 임계값
     if max_val >= threshold:
-        image_height, image_width = next_icon.shape[:2]
-        top_left = max_loc
-        bottom_right = (top_left[0] + image_width, top_left[1] + image_height)
-        
-        center_x = (top_left[0] + bottom_right[0]) // 2
-        center_y = (top_left[1] + bottom_right[1]) // 2
-        return (center_x, center_y)
+        return get_center_of_top_left(image, max_loc)
     else:
         None
 
@@ -34,6 +44,7 @@ def on_release(key):
         global stop_flag
         stop_flag = True
         return False
+
 def listen_keyboard():
     with keyboard.Listener(on_release=on_release) as listener:
         listener.join()
@@ -47,13 +58,16 @@ while not stop_flag:
     img = ImageGrab.grab(bbox=(1920/2-width/2, 1024/2-height/2, 1920/2 + width/2, 1024/2 + height/2)) #x, y, w, h
     img_np = np.array(img)
     frame = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
+    _, darker_frame = cv2.threshold(frame, 200, 255, cv2.THRESH_BINARY)
+    next_central_xy = is_image_exist(darker_frame, next_icon, threshold=0.8)
+    exit_learn_central_xy = is_image_exist(darker_frame, after_learn_icon, threshold=0.75)
     
-    central_xy = is_time_to_next(frame)
-    
-    if central_xy != None:
-        pyautogui.moveTo(central_xy[0], central_xy[1], duration=0.3)
+    if next_central_xy != None:
+        pyautogui.moveTo(next_central_xy[0], next_central_xy[1], duration=0.3)
         pyautogui.click()
-
+    elif exit_learn_central_xy != None:
+        pyautogui.moveTo(exit_learn_central_xy[0], exit_learn_central_xy[1], duration=0.3)
+        pyautogui.click()
     else:
         if side_to_side_flag:
             pyautogui.moveTo(50, 50, duration=0.5)
@@ -61,7 +75,9 @@ while not stop_flag:
             pyautogui.moveTo(1920/2, 1024/2, duration=0.5)
         side_to_side_flag = not side_to_side_flag
         time.sleep(1)
-        
+    
+    #cv2.imshow("d", darker_frame)
+    
     if cv2.waitKey(1) & 0Xff == ord('q'):
         break
         
