@@ -8,7 +8,13 @@ from pynput import keyboard
 from datetime import datetime
 
 width, height = pyautogui.size()
-print("="*50)
+
+print("*"*50)
+print(" "*15, "Welcome to Shila Zerg")
+print("*"*50)
+print("")
+
+print("="*21, "SYSTEM", "="*21)
 print(f"Your screen system consists of : {width} x {height}")
 print("="*50)
 #for i in range(10):
