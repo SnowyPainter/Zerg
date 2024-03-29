@@ -17,7 +17,7 @@ print("")
 print("="*21, "SYSTEM", "="*21)
 print(f"Your screen system consists of : {width} x {height}")
 print("="*50)
-print("시스템 배율을 선택하세요.")
+print("시스템 배율을 선택하세요. (컴퓨터 100%, 노트북 125% 권장, 노트북 안될 시 150%)")
 mag = {
     1 : "100%",
     2 : "125%",
@@ -26,9 +26,9 @@ mag = {
 for n, s in mag.items():
     print(f"{n}. {s}")
 magnification = int(input("번호 : "))
-#for i in range(10):
-#    print(f"{10-i}")
-#    time.sleep(1)
+for i in range(10):
+    print(f"{10-i}초 후에 시작됩니다.")
+    time.sleep(1)
 
 def convert_binary(image):    
     cvt_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
