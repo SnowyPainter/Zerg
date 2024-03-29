@@ -21,13 +21,20 @@ print("="*50)
 #    print(f"{10-i}")
 #    time.sleep(1)
 
-next_icon = cv2.imread("./next.png")
-after_learn_icon = cv2.imread("./after_learn.png")
+def convert_binary(image):    
+    cvt_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    _, cvt_image = cv2.threshold(cvt_image, 127, 255, cv2.THRESH_BINARY)
+    return cvt_image
 
-next_icon = cv2.cvtColor(next_icon, cv2.COLOR_BGR2GRAY)
-after_learn_icon = cv2.cvtColor(after_learn_icon, cv2.COLOR_BGR2GRAY)
-_, next_icon = cv2.threshold(next_icon, 127, 255, cv2.THRESH_BINARY)
-_, after_learn_icon = cv2.threshold(after_learn_icon, 127, 255, cv2.THRESH_BINARY)
+next_icon = cv2.imread("./next.png")
+lt_next_icon = cv2.imread("./next_lt.png")
+after_learn_icon = cv2.imread("./after_learn.png")
+lt_after_learn_icon = cv2.imread("./after_learn_lt.png")
+
+next_icon = convert_binary(next_icon)
+lt_next_icon = convert_binary(lt_next_icon)
+after_learn_icon = convert_binary(after_learn_icon)
+lt_after_learn_icon = convert_binary(lt_after_learn_icon)
 
 def get_center_of_top_left(image, top_left):
     image_height, image_width = image.shape[:2]
@@ -37,10 +44,13 @@ def get_center_of_top_left(image, top_left):
     center_y = (top_left[1] + bottom_right[1]) // 2
     return (center_x, center_y)
 
-def is_image_exist(frame, image, threshold):
+prev_max_val_next = 0
+prev_max_val_afl = 0
+
+def is_image_exist(frame, image, threshold, debug_log=""):
     result = cv2.matchTemplate(frame, image, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-
+    print(f"DEBUG:\t{debug_log} {max_val} | {next_button_threshold}, {afl_button_threshold}")
     if max_val >= threshold:
         print(f"DEBUG:\tThreshold {threshold}, detected image {max_val}")
         return get_center_of_top_left(image, max_loc)
@@ -52,8 +62,18 @@ def click_to(x, y, title=""):
     pyautogui.click()
 
 def on_release(key):
+    global stop_flag, next_button_threshold, afl_button_threshold
+    
+    if key == keyboard.Key.up:
+        next_button_threshold += 0.05
+        afl_button_threshold += 0.05
+        print("DEBUG:\tNEXT,AFL BTN SENS += 0.5")
+    if key == keyboard.Key.down:
+        next_button_threshold -= 0.05
+        afl_button_threshold -= 0.05
+        print("DEBUG:\tNEXT,AFL BTN SENS -= 0.5")
+    
     if key == keyboard.Key.esc:
-        global stop_flag
         stop_flag = True
         return False
 
@@ -63,21 +83,32 @@ def listen_keyboard():
 keyboard_thread = threading.Thread(target=listen_keyboard)
 keyboard_thread.start()
 
+next_button_threshold = 0.8
+afl_button_threshold = 0.75
 stop_flag = False
 side_to_side_flag = False
 
 while not stop_flag:
-    img = ImageGrab.grab(bbox=(1920/2-width/2, 1024/2-height/2, 1920/2 + width/2, 1024/2 + height/2)) #x, y, w, h
+    img = ImageGrab.grab(bbox=(width/2-width/2, height/2-height/2, width/2 + width/2, height/2 + height/2)) #x, y, w, h
     img_np = np.array(img)
     frame = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
     _, darker_frame = cv2.threshold(frame, 200, 255, cv2.THRESH_BINARY)
-    next_central_xy = is_image_exist(darker_frame, next_icon, threshold=0.8)
-    exit_learn_central_xy = is_image_exist(darker_frame, after_learn_icon, threshold=0.75)
+    next_central_xy = is_image_exist(darker_frame, next_icon, threshold=next_button_threshold, debug_log="next")
+    exit_learn_central_xy = is_image_exist(darker_frame, after_learn_icon, threshold=afl_button_threshold, debug_log="afl")
     
+    lt_next_central_xy = is_image_exist(darker_frame, lt_next_icon, threshold=next_button_threshold, debug_log="next lt")
+    lt_exit_learn_central_xy = is_image_exist(darker_frame, lt_after_learn_icon, threshold=afl_button_threshold, debug_log="afl lt")
+    
+    # PC
     if next_central_xy != None:
         click_to(next_central_xy[0], next_central_xy[1], "Next Button")
     elif exit_learn_central_xy != None:
         click_to(exit_learn_central_xy[0], exit_learn_central_xy[1], "Done of Learning")
+    # Laptop
+    elif lt_next_central_xy != None:
+        click_to(lt_next_central_xy[0], lt_next_central_xy[1], "Next Button")
+    elif lt_exit_learn_central_xy != None:
+        click_to(lt_exit_learn_central_xy[0], lt_exit_learn_central_xy[1], "Done of Learning")
     else:
         if side_to_side_flag:
             pyautogui.moveTo(50, 50, duration=0.5)
