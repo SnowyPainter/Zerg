@@ -17,6 +17,15 @@ print("")
 print("="*21, "SYSTEM", "="*21)
 print(f"Your screen system consists of : {width} x {height}")
 print("="*50)
+print("시스템 배율을 선택하세요.")
+mag = {
+    1 : "100%",
+    2 : "125%",
+    3 : "150%"
+}
+for n, s in mag.items():
+    print(f"{n}. {s}")
+magnification = int(input("번호 : "))
 #for i in range(10):
 #    print(f"{10-i}")
 #    time.sleep(1)
@@ -26,15 +35,19 @@ def convert_binary(image):
     _, cvt_image = cv2.threshold(cvt_image, 127, 255, cv2.THRESH_BINARY)
     return cvt_image
 
-next_icon = cv2.imread("./next.png")
-lt_next_icon = cv2.imread("./next_lt.png")
-after_learn_icon = cv2.imread("./after_learn.png")
-lt_after_learn_icon = cv2.imread("./after_learn_lt.png")
+next_icon_100 = cv2.imread("./next.png")
+next_icon_150 = cv2.imread("./next_lt.png")
+next_icon_125 = cv2.imread("./next_125.png")
+after_learn_icon_100 = cv2.imread("./after_learn.png")
+after_learn_icon_150 = cv2.imread("./after_learn_lt.png")
+after_learn_icon_125 = cv2.imread("./after_learn_125.png")
 
-next_icon = convert_binary(next_icon)
-lt_next_icon = convert_binary(lt_next_icon)
-after_learn_icon = convert_binary(after_learn_icon)
-lt_after_learn_icon = convert_binary(lt_after_learn_icon)
+next_icon_100 = convert_binary(next_icon_100)
+next_icon_150 = convert_binary(next_icon_150)
+next_icon_125 = convert_binary(next_icon_125)
+after_learn_icon_100 = convert_binary(after_learn_icon_100)
+after_learn_icon_125 = convert_binary(after_learn_icon_125)
+after_learn_icon_150 = convert_binary(after_learn_icon_150)
 
 def get_center_of_top_left(image, top_left):
     image_height, image_width = image.shape[:2]
@@ -88,27 +101,30 @@ afl_button_threshold = 0.75
 stop_flag = False
 side_to_side_flag = False
 
+if magnification == 1:
+    next_icon = next_icon_100
+    after_learn_icon = after_learn_icon_100
+elif magnification == 2:
+    next_icon = next_icon_125
+    after_learn_icon = after_learn_icon_125
+else:
+    next_icon = next_icon_150
+    after_learn_icon = after_learn_icon_150
+
 while not stop_flag:
     img = ImageGrab.grab(bbox=(width/2-width/2, height/2-height/2, width/2 + width/2, height/2 + height/2)) #x, y, w, h
     img_np = np.array(img)
     frame = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
     _, darker_frame = cv2.threshold(frame, 200, 255, cv2.THRESH_BINARY)
+    
     next_central_xy = is_image_exist(darker_frame, next_icon, threshold=next_button_threshold, debug_log="next")
     exit_learn_central_xy = is_image_exist(darker_frame, after_learn_icon, threshold=afl_button_threshold, debug_log="afl")
-    
-    lt_next_central_xy = is_image_exist(darker_frame, lt_next_icon, threshold=next_button_threshold, debug_log="next lt")
-    lt_exit_learn_central_xy = is_image_exist(darker_frame, lt_after_learn_icon, threshold=afl_button_threshold, debug_log="afl lt")
-    
+
     # PC
     if next_central_xy != None:
         click_to(next_central_xy[0], next_central_xy[1], "Next Button")
     elif exit_learn_central_xy != None:
         click_to(exit_learn_central_xy[0], exit_learn_central_xy[1], "Done of Learning")
-    # Laptop
-    elif lt_next_central_xy != None:
-        click_to(lt_next_central_xy[0], lt_next_central_xy[1], "Next Button")
-    elif lt_exit_learn_central_xy != None:
-        click_to(lt_exit_learn_central_xy[0], lt_exit_learn_central_xy[1], "Done of Learning")
     else:
         if side_to_side_flag:
             pyautogui.moveTo(50, 50, duration=0.5)
