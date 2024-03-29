@@ -5,7 +5,25 @@ import cv2
 from PIL import ImageGrab
 import time
 from pynput import keyboard
+import os
 from datetime import datetime
+
+class Debugger:
+    def __init__(self):
+        self.log_file = self.create_log_file()
+
+    def create_log_file(self):
+        current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        file_name = f"log_{current_datetime}.txt"
+        log_file_path = os.path.join(os.getcwd(), file_name)
+        open(log_file_path, 'a').close()
+        return log_file_path
+
+    def log(self, title, content):
+        with open(self.log_file, 'a') as file:
+            file.write(f"[{datetime.now()}] {title}:\t{content}\n")
+
+debugger = Debugger()
 
 width, height = pyautogui.size()
 
@@ -16,6 +34,7 @@ print("")
 
 print("="*21, "SYSTEM", "="*21)
 print(f"Your screen system consists of : {width} x {height}")
+print(f"방향키 up/down으로 감도(기본 감도: 0.8~0.75)를 조절합니다.")
 print("="*50)
 print("시스템 배율을 선택하세요. (컴퓨터 100%, 노트북 125% 권장, 노트북 안될 시 150%)")
 mag = {
@@ -27,7 +46,7 @@ for n, s in mag.items():
     print(f"{n}. {s}")
 magnification = int(input("번호 : "))
 for i in range(10):
-    print(f"{10-i}초 후에 시작됩니다.")
+    print(f"{10-i}초 후에 시작됩니다.\r")
     time.sleep(1)
 
 def convert_binary(image):    
@@ -63,14 +82,14 @@ prev_max_val_afl = 0
 def is_image_exist(frame, image, threshold, debug_log=""):
     result = cv2.matchTemplate(frame, image, cv2.TM_CCOEFF_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-    print(f"DEBUG:\t{debug_log} {max_val} | {next_button_threshold}, {afl_button_threshold}")
+    debugger.log("is_image_exist func", f"{debug_log} {max_val} | {next_button_threshold}, {afl_button_threshold}")
     if max_val >= threshold:
-        print(f"DEBUG:\tThreshold {threshold}, detected image {max_val}")
+        debugger.log("is_image_exist func", f"Threshold {threshold}, detected image {max_val}")
         return get_center_of_top_left(image, max_loc)
     else:
         None
 def click_to(x, y, title=""):
-    print(f"DEBUG:\t{title}\tClicked - {datetime.now()}")
+    debugger.log("click_to func", f"\t{title}\tClicked")
     pyautogui.moveTo(x, y, duration=0.3)
     pyautogui.click()
 
