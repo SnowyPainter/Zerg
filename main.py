@@ -45,9 +45,13 @@ mag = {
 for n, s in mag.items():
     print(f"{n}. {s}")
 magnification = int(input("번호 : "))
-for i in range(10):
-    print(f"{10-i}초 후에 시작됩니다.\r")
-    time.sleep(1)
+
+DEBUG = True
+
+if not DEBUG:
+    for i in range(10):
+        print(f"{10-i}초 후에 시작됩니다.\r")
+        time.sleep(1)
 
 def convert_binary(image):    
     cvt_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -90,7 +94,7 @@ def is_image_exist(frame, image, threshold, debug_log=""):
         None
 def click_to(x, y, title=""):
     debugger.log("click_to func", f"\t{title}\tClicked")
-    pyautogui.moveTo(x, y, duration=0.3)
+    pyautogui.moveTo(x, y, duration=0.1)
     pyautogui.click()
 
 def on_release(key):
@@ -130,6 +134,8 @@ else:
     next_icon = next_icon_150
     after_learn_icon = after_learn_icon_150
 
+click_time = time.time()
+
 while not stop_flag:
     img = ImageGrab.grab(bbox=(width/2-width/2, height/2-height/2, width/2 + width/2, height/2 + height/2)) #x, y, w, h
     img_np = np.array(img)
@@ -141,7 +147,10 @@ while not stop_flag:
 
     # PC
     if next_central_xy != None:
-        click_to(next_central_xy[0], next_central_xy[1], "Next Button")
+        clicked = time.time()
+        if clicked - click_time > 1:
+            click_to(next_central_xy[0], next_central_xy[1], "Next Button")
+            click_time = clicked
     elif exit_learn_central_xy != None:
         click_to(exit_learn_central_xy[0], exit_learn_central_xy[1], "Done of Learning")
     else:
