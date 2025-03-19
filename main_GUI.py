@@ -22,11 +22,14 @@ DEFAULT_SCAN_DELAY = 1.5     # 스캔 간 대기 시간
 
 class Debugger:
     def __init__(self):
-        self.log_file = self.create_log_file()
+        self.log_folder = os.path.join(os.getcwd(), 'logs')
+        if not os.path.exists(self.log_folder):
+            os.makedirs(self.log_folder)
+        self.log_file = self.create_log_file(self.log_folder)
 
-    def create_log_file(self):
+    def create_log_file(self, log_folder):
         current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = f"log_{current_datetime}.txt"
+        file_name = f"{log_folder}/GUI_{current_datetime}.txt"
         log_file_path = os.path.join(os.getcwd(), file_name)
         open(log_file_path, 'a').close()
         return log_file_path
