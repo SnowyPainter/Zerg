@@ -11,7 +11,7 @@ import ctypes
 
 # 기본 설정값
 DEFAULT_MOVE_DURATION = 1.0  # 마우스 이동 속도
-DEFAULT_CLICK_DELAY = 2.0    # 클릭 간 대기 시간
+DEFAULT_CLICK_DELAY = 1.0    # 클릭 간 대기 시간
 DEFAULT_SCAN_DELAY = 1.5     # 스캔 간 대기 시간
 
 class Debugger:
@@ -75,6 +75,8 @@ class AutoClicker:
             'cancel': 0.8,
             'start': 0.8
         }
+        # 클릭 딜레이 초기값 설정
+        self.click_delay = 1.0
 
     def load_icons(self, resource_path='./resource'):
         # 시스템 배율 자동 감지
@@ -101,7 +103,7 @@ class AutoClicker:
         self.debugger.log("click_to func", f"\t{title}\tClicked")
         pyautogui.moveTo(x, y, duration=DEFAULT_MOVE_DURATION)
         pyautogui.click()
-        time.sleep(DEFAULT_CLICK_DELAY)
+        time.sleep(self.click_delay)  # 동적 클릭 딜레이 사용
 
     def is_image_exist(self, frame, image, button_type, debug_log=""):
         result = cv2.matchTemplate(frame, image, cv2.TM_CCOEFF_NORMED)
@@ -131,8 +133,35 @@ class AutoClicker:
                 return True
         return False
 
+    def setup_keyboard_listener(self):
+        def on_release(key):
+            if key == keyboard.Key.up:
+                self.thresholds['next'] += 0.05
+                self.thresholds['after_learn'] += 0.05
+                print("DEBUG:\tNEXT,AFL BTN SENS += 0.05")
+            if key == keyboard.Key.down:
+                self.thresholds['next'] -= 0.05
+                self.thresholds['after_learn'] -= 0.05
+                print("DEBUG:\tNEXT,AFL BTN SENS -= 0.05")
+            if key == keyboard.Key.left:
+                self.click_delay = max(0.1, self.click_delay - 0.1)
+                print(f"DEBUG:\tCLICK DELAY -= 0.1 (현재: {self.click_delay:.1f}초)")
+            if key == keyboard.Key.right:
+                self.click_delay = min(2.0, self.click_delay + 0.1)
+                print(f"DEBUG:\tCLICK DELAY += 0.1 (현재: {self.click_delay:.1f}초)")
+            if key == keyboard.Key.esc:
+                self.stop_flag = True
+                return False
+
+        listener = keyboard.Listener(on_release=on_release)
+        listener.daemon = True
+        listener.start()
+        return listener
+
     def run(self):
         print("*** ESC를 눌러 종료합니다. ***")
+        print("*** 방향키로 조절: 위/아래=감도, 좌/우=클릭 딜레이 ***")
+        print(f"현재 클릭 딜레이: {self.click_delay:.1f}초")
         click_time = time.time()
         keyboard_thread = self.setup_keyboard_listener()
 
@@ -151,46 +180,31 @@ class AutoClicker:
 
             if next_central_xy:
                 clicked = time.time()
-                if clicked - click_time > DEFAULT_CLICK_DELAY:
+                if clicked - click_time > self.click_delay:
                     self.click_to(next_central_xy[0], next_central_xy[1], "Next Button")
                     click_time = clicked
+                    continue  # 클릭 후 바로 다음 루프로 이동
             elif exit_learn_central_xy:
                 self.click_to(exit_learn_central_xy[0], exit_learn_central_xy[1], "Done of Learning")
+                continue  # 클릭 후 바로 다음 루프로 이동
             elif cancel_central_xy:
                 self.click_to(cancel_central_xy[0], cancel_central_xy[1], "Cancel Button")
                 self.check_and_click_start()
+                continue  # 클릭 후 바로 다음 루프로 이동
+
+            # 버튼이 감지되지 않았을 때만 마우스 이동
+            if self.side_to_side_flag:
+                pyautogui.moveTo(50, 50, duration=DEFAULT_MOVE_DURATION)
             else:
-                if self.side_to_side_flag:
-                    pyautogui.moveTo(50, 50, duration=DEFAULT_MOVE_DURATION)
-                else:
-                    pyautogui.moveTo(self.width/2, self.height/2, duration=DEFAULT_MOVE_DURATION)
-                self.side_to_side_flag = not self.side_to_side_flag
-                time.sleep(DEFAULT_SCAN_DELAY)
+                pyautogui.moveTo(self.width/2, self.height/2, duration=DEFAULT_MOVE_DURATION)
+            self.side_to_side_flag = not self.side_to_side_flag
+            time.sleep(DEFAULT_SCAN_DELAY)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
         cv2.destroyAllWindows()
         keyboard_thread.join()
-
-    def setup_keyboard_listener(self):
-        def on_release(key):
-            if key == keyboard.Key.up:
-                self.thresholds['next'] += 0.05
-                self.thresholds['after_learn'] += 0.05
-                print("DEBUG:\tNEXT,AFL BTN SENS += 0.05")
-            if key == keyboard.Key.down:
-                self.thresholds['next'] -= 0.05
-                self.thresholds['after_learn'] -= 0.05
-                print("DEBUG:\tNEXT,AFL BTN SENS -= 0.05")
-            if key == keyboard.Key.esc:
-                self.stop_flag = True
-                return False
-
-        listener = keyboard.Listener(on_release=on_release)
-        listener.daemon = True
-        listener.start()
-        return listener
 
 if __name__ == "__main__":
     print("*"*50)

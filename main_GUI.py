@@ -17,7 +17,7 @@ from PyQt5.QtGui import QFont
 
 # 기본 설정값
 DEFAULT_MOVE_DURATION = 1.0  # 마우스 이동 속도
-DEFAULT_CLICK_DELAY = 2.0    # 클릭 간 대기 시간
+DEFAULT_CLICK_DELAY = 1.0    # 클릭 간 대기 시간
 DEFAULT_SCAN_DELAY = 1.5     # 스캔 간 대기 시간
 
 class Debugger:
@@ -156,6 +156,8 @@ class AutoClicker:
             'cancel': 0.8,
             'start': 0.8
         }
+        # 클릭 딜레이 초기값 설정
+        self.click_delay = 1.0
 
     def load_icons(self, resource_path='./resource'):
         # 리소스 폴더가 없으면 경고 메시지만 표시하고 계속 진행
@@ -335,18 +337,18 @@ class ShilaZergGUI(QMainWindow):
         
         # 클릭 간 딜레이
         click_delay_layout = QHBoxLayout()
-        click_delay_label = QLabel('클릭 간 딜레이:')
+        click_delay_label = QLabel('클릭 간 딜레이 (초):')
         click_delay_layout.addWidget(click_delay_label)
         
         self.click_delay_slider = QSlider(Qt.Horizontal)
-        self.click_delay_slider.setMinimum(5)
-        self.click_delay_slider.setMaximum(40)
-        self.click_delay_slider.setValue(int(self.auto_clicker.click_delay * 10))
+        self.click_delay_slider.setMinimum(1)  # 0.1초
+        self.click_delay_slider.setMaximum(20)  # 2.0초
+        self.click_delay_slider.setValue(int(self.auto_clicker.click_delay * 10))  # 초기값 설정
         self.click_delay_slider.valueChanged.connect(self.update_click_delay)
         click_delay_layout.addWidget(self.click_delay_slider)
         
-        self.click_delay_value_label = QLabel(f"{self.auto_clicker.click_delay:.1f}초")
-        click_delay_layout.addWidget(self.click_delay_value_label)
+        self.click_delay_value = QLabel(f"{self.auto_clicker.click_delay:.1f}")
+        click_delay_layout.addWidget(self.click_delay_value)
         
         settings_layout.addLayout(click_delay_layout)
         
@@ -427,10 +429,9 @@ class ShilaZergGUI(QMainWindow):
         self.auto_clicker.move_duration = value
         self.move_speed_value_label.setText(f"{value:.1f}초")
         
-    def update_click_delay(self):
-        value = self.click_delay_slider.value() / 10
-        self.auto_clicker.click_delay = value
-        self.click_delay_value_label.setText(f"{value:.1f}초")
+    def update_click_delay(self, value):
+        self.auto_clicker.click_delay = value / 10.0
+        self.click_delay_value.setText(f"{self.auto_clicker.click_delay:.1f}")
         
     def update_scan_delay(self):
         value = self.scan_delay_slider.value() / 10
